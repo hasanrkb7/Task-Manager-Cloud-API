@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - Cloud Functions Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .task-list {
+            margin-top: 20px;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .task-item h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .task-item p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .task-item .task-id {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-box h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .stat-box p {
+            opacity: 0.9;
+        }
+
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            display: none;
+        }
+
+        .response.error {
+            border-left-color: #dc3545;
+            background: #ffe6e6;
+        }
+
+        .response.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .api-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .api-info code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>☁️ Task Manager Cloud API</h1>
+            <p>Google Cloud Functions Demo - Task 6</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">By: Rakibul Hasan Remon</p>
+        </div>
+
+        <!-- Create Task Section -->
+        <div class="card">
+            <h2>📝 Create New Task</h2>
+            <div class="input-group">
+                <label for="taskTitle">Task Title *</label>
+                <input type="text" id="taskTitle" placeholder="Enter task title">
+            </div>
+            <div class="input-group">
+                <label for="taskDescription">Description</label>
+                <textarea id="taskDescription" placeholder="Enter task description (optional)"></textarea>
+            </div>
+            <button class="btn" onclick="createTask()">Create Task</button>
+            <div id="createResponse" class="response"></div>
+            <div id="createLoading" class="loading">
+                <div class="spinner"></div>
+                <p>Creating task...</p>
+            </div>
+        </div>
+
+        <!-- Get Tasks Section -->
+        <div class="card">
+            <h2>📋 All Tasks</h2>
+            <button class="btn btn-secondary" onclick="getTasks()">Refresh Tasks</button>
+            <div id="getLoading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading tasks...</p>
+            </div>
+            <div id="taskList" class="task-list"></div>
+        </div>
+
+        <!-- Delete Task Section -->
+        <div class="card">
+            <h2>🗑️ Delete Task</h2>
+            <div class="input-group">
+                <label for="deleteTaskId">Task ID</label>
+                <input type="number" id="deleteTaskId" placeholder="Enter task ID to delete">
+            </div>
+            <button class="btn btn-danger" onclick="deleteTask()">Delete Task</button>
+            <div id="deleteResponse" class="response"></div>
+            <div id="deleteLoading" class="loading">
+                <div class="spinner"></div>
+                <p>Deleting task...</p>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="card">
+            <h2>📊 System Statistics (Bonus Function)</h2>
+            <button class="btn" onclick="getStats()">Load Statistics</button>
+            <div id="statsLoading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading statistics...</p>
+            </div>
+            <div id="statsGrid" class="stats-grid"></div>
+            <div id="statsResponse" class="response"></div>
+        </div>
+
+        <!-- API Information -->
+        <div class="card">
+            <h2>🔗 API Endpoints</h2>
+            <div class="api-info">
+                <p><strong>Project:</strong> YOUR_PROJECT_ID</p>
+                <p><strong>Region:</strong> europe-west1</p>
+                <p style="margin-top: 10px;"><strong>Endpoints:</strong></p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li style="margin-bottom: 5px;"><code>POST</code> /create-task</li>
+                    <li style="margin-bottom: 5px;"><code>GET</code> /get-tasks</li>
+                    <li style="margin-bottom: 5px;"><code>DELETE</code> /delete-task?id={id}</li>
+                    <li style="margin-bottom: 5px;"><code>GET</code> /get-task-stats (Bonus)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://europe-west1-YOUR_PROJECT_ID.cloudfunctions.net';
+
+        function showResponse(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'response show' + (isError ? ' error' : '');
+            setTimeout(() => {
+                element.className = 'response';
+            }, 5000);
+        }
+
+        function showLoading(elementId, show) {
+            const element = document.getElementById(elementId);
+            element.className = show ? 'loading show' : 'loading';
+        }
+
+        async function createTask() {
+            const title = document.getElementById('taskTitle').value;
+            const description = document.getElementById('taskDescription').value;
+
+            if (!title.trim()) {
+                showResponse('createResponse', '❌ Please enter a task title', true);
+                return;
+            }
+
+            showLoading('createLoading', true);
+
+            try {
+                const response = await fetch(`${API_BASE}/create-task`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ title, description })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('createResponse', `✅ ${data.message} - Task ID: ${data.task.id}`);
+                    document.getElementById('taskTitle').value = '';
+                    document.getElementById('taskDescription').value = '';
+                    getTasks(); // Refresh task list
+                } else {
+                    showResponse('createResponse', `❌ Error: ${data.error}`, true);
+                }
+            } catch (error) {
+                showResponse('createResponse', `❌ Error: ${error.message}`, true);
+            } finally {
+                showLoading('createLoading', false);
+            }
+        }
+
+        async function getTasks() {
+            showLoading('getLoading', true);
+
+            try {
+                const response = await fetch(`${API_BASE}/get-tasks`);
+                const data = await response.json();
+
+                const taskList = document.getElementById('taskList');
+                
+                if (data.tasks.length === 0) {
+                    taskList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No tasks found. Create one above!</p>';
+                } else {
+                    taskList.innerHTML = data.tasks.map(task => `
+                        <div class="task-item">
+                            <h3>${task.title}</h3>
+                            <p>${task.description || 'No description'}</p>
+                            <span class="task-id">ID: ${task.id} | Status: ${task.completed ? 'Completed' : 'Pending'}</span>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                document.getElementById('taskList').innerHTML = `<p style="color: red;">❌ Error loading tasks: ${error.message}</p>`;
+            } finally {
+                showLoading('getLoading', false);
+            }
+        }
+
+        async function deleteTask() {
+            const taskId = document.getElementById('deleteTaskId').value;
+
+            if (!taskId) {
+                showResponse('deleteResponse', '❌ Please enter a task ID', true);
+                return;
+            }
+
+            showLoading('deleteLoading', true);
+
+            try {
+                const response = await fetch(`${API_BASE}/delete-task?id=${taskId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('deleteResponse', `✅ ${data.message}`);
+                    document.getElementById('deleteTaskId').value = '';
+                    getTasks(); // Refresh task list
+                } else {
+                    showResponse('deleteResponse', `❌ Error: ${data.error}`, true);
+                }
+            } catch (error) {
+                showResponse('deleteResponse', `❌ Error: ${error.message}`, true);
+            } finally {
+                showLoading('deleteLoading', false);
+            }
+        }
+
+        async function getStats() {
+            showLoading('statsLoading', true);
+
+            try {
+                const response = await fetch(`${API_BASE}/get-task-stats`);
+                const data = await response.json();
+
+                const statsGrid = document.getElementById('statsGrid');
+                const metrics = data.simulated_metrics;
+
+                statsGrid.innerHTML = `
+                    <div class="stat-box">
+                        <h3>${metrics.total_tasks}</h3>
+                        <p>Total Tasks</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${metrics.total_api_calls_today}</h3>
+                        <p>API Calls Today</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${metrics.average_response_time_ms}ms</h3>
+                        <p>Avg Response Time</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${metrics.success_rate_percent}%</h3>
+                        <p>Success Rate</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${metrics.active_functions}</h3>
+                        <p>Active Functions</p>
+                    </div>
+                `;
+
+                showResponse('statsResponse', `✅ Report generated at: ${new Date(data.report_generated_at).toLocaleString()}`);
+            } catch (error) {
+                showResponse('statsResponse', `❌ Error: ${error.message}`, true);
+            } finally {
+                showLoading('statsLoading', false);
+            }
+        }
+
+        // Load tasks on page load
+        window.addEventListener('load', () => {
+            getTasks();
+        });
+    </script>
+</body>
+</html>
